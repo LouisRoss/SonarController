@@ -3,7 +3,9 @@ network:
   ethernets:
     enp2s0:
       dhcp4: true
+      optional: true
     enp1s0:
       dhcp4: true
+      optional: true
   version: 2
   renderer: NetworkManager
