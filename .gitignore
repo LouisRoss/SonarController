@@ -139,3 +139,9 @@ source/configuration/configuration.json
 source/simulator/__pycache__/*
 source/simulator/sonar.dat
 source/deploy/__runfile__.deploy
+source/pointcloud/*.cam
+source/pointcloud/*.png
+source/pointcloud/*.pcd
+source/pointcloud/__pycache__/
+source/converter/__pycache__/
+
