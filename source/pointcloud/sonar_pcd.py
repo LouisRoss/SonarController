@@ -17,6 +17,7 @@ class SonarPCD:
         self.period = self.maxperiod
         self.depthbias = 0.0
         self.depthbiasdelta = 0.1
+        self.headpositions = []
 
     def __enter__(self):
         #self.pcdGenerator = PCDGenerator(os.path.join(self.path, 'sonar881.pcd'), 0)
@@ -53,7 +54,7 @@ class SonarPCD:
         header['switches_accepted'] = True if (pingHeader[4] & 0x40) != 0 else False
         header['overrun'] = True if (pingHeader[4] & 0x80) != 0 else False
         header['headposition'] = (((pingHeader[6] & 0x3f) << 7 | (pingHeader[5] & 0x7f)) - 600) * 0.3
-        header['stepdirection'] = 'cw' if (pingHeader[6] & 0x40) != 0 else 'ccw'
+        header['stepdirection'] = ' cw' if (pingHeader[6] & 0x40) != 0 else 'ccw'
         header['range'] = pingHeader[7]
         header['profilerange'] = pingHeader[9] << 7 | pingHeader[8] & 0x7f
         header['databytes'] = pingHeader[11] << 7 | pingHeader[10] & 0x7f
@@ -80,15 +81,16 @@ class SonarPCD:
             return False
         
         header = self.ParsePingHeader(pingHeader)
+        self.headpositions.append(f"{header['headposition']: >5.1f} {header['stepdirection']}")
         radians = header['headposition'] * math.pi / 180.0
         cosine = math.cos(radians)
         sine = math.sin(radians)
 
         pingData = dataFile.read(header['databytes'] + 1)  # Don't forget the 0xfc terminator.
         for pointIndex in range(len(pingData)-1):
-            self.period -= 1
-            if self.period == 0:
-                self.period = self.maxperiod
+            #self.period -= 1
+            #if self.period == 0:
+            #    self.period = self.maxperiod
                 intensity = pingData[pointIndex] if pointIndex >= 120 else 0
                 if header['headposition'] == self.firstHeadPos:
                     intensity = 255
@@ -99,12 +101,22 @@ class SonarPCD:
 
     def ReadSonarData(self, dataFileName):
         print('Reading sonar pings in file ' + dataFileName)
+        self.headpositions = []
         dataPath = os.path.join(self.path, dataFileName)
         with open(dataPath, 'rb') as dataFile:
             self.firstPing = True
             while self.ReadPingData(dataFile):
                 pass
 
+        print(f'{len(self.headpositions)} scans:')
+        breakcount = 0
+        for headpos in self.headpositions:
+            print(headpos, end=' ')
+            breakcount += 1
+            if breakcount >= 15:
+                print()
+                breakcount = 0
+        print()
         self.pcdGenerator.AddLine(self.pcdLine)
         self.pcdLine = []
         self.depthbias += self.depthbiasdelta
